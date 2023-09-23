@@ -11,18 +11,21 @@ fn main() {
     let mut top = 0;
     let mut curr: i32 = 0;
 
+    let mut elves: Vec<i32> = Vec::new();
+
     for s in &lines {
         println!("s {}, c {}, t {}", s, curr, top);
         if s.is_empty() {
             println!("Empty Line!");
-            if curr > top {
-                top = curr;
-            }
+            elves.push(curr);
             curr = 0;
         } else {
             curr += s.parse::<i32>().unwrap();    
         }
         
     }
-    println!("Result: {}", top);
+    elves.sort();
+    elves.reverse();
+
+    println!("Result: \na: {} \nb: {}", elves[0], elves[0] + elves[1] + elves[2]);
 }
