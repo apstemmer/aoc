@@ -1,8 +1,7 @@
 use std::fs;
 
 fn main() {
-    println!("Hello, world!");
-    let contents = fs::read_to_string("src/input.txt").expect("Should read to file!");
+    let contents = fs::read_to_string("inputs/01.txt").expect("Should read to file!");
     
     let lines: Vec<String> = contents.lines()
         .map(|s| s.to_string())
