@@ -20,6 +20,7 @@ fn main() {
 
     let result: (Option<String>, Option<String>) = match args.day {
         1 => day01::execute(input),
+        2 => day02::execute(input),
         _ => (None, None)
     };
 
