@@ -24,12 +24,12 @@ fn main() {
     };
 
     match result.0 {
-        Some(T) => println!("Result for part A: {}", T),
+        Some(res_a) => println!("Result for part A: {}", res_a),
         None => println!("No result for part A.")
     }
 
     match result.1 {
-        Some(T) => println!("Result for part B: {}", T),
+        Some(res_b) => println!("Result for part B: {}", res_b),
         None => println!("No result for part B.")
     }
 }
