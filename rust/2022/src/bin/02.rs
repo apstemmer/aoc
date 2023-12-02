@@ -7,7 +7,6 @@ fn main() {
     let strategy: Vec<(&str, &str)> = contents.lines()
         .map(|s| s.split(' ')
             .take(2)
-            // .map(|slice| slice.to_string())
             .collect())
         .map(|v: Vec<&str>| (v[0].clone(), v[1].clone()))
         .collect();
