@@ -12,7 +12,6 @@ struct Args {
 }
 
 fn main() {
-    println!("Hello, world!");
     let args = Args::parse();
 
     println!("Working on day: {}", args.day);
@@ -21,6 +20,11 @@ fn main() {
     let result: (Option<String>, Option<String>) = match args.day {
         1 => day01::execute(input),
         2 => day02::execute(input),
+        3 => day03::execute(input),
+        4 => day04::execute(input),
+        5 => day05::execute(input),
+        6 => day06::execute(input),
+        7 => day07::execute(input),
         _ => (None, None)
     };
 
