@@ -61,7 +61,7 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         let mut dst = None;
         for map in maps.iter().rev() {
             for ((start, end), offset) in map {
-                let range = (*end - *start);
+                let range = *end - *start;
                 if offset + range > src && src >= *offset {
                     dst = Some(src - *offset + start)
                 }
