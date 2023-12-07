@@ -7,7 +7,7 @@ fn compare_hand(hand1 : &(String, i32), hand2 : &(String, i32)) -> Ordering {
         ('A', 14),
         ('K', 13),
         ('Q', 12),
-        ('J', 11),
+        ('J', 1),
         ('T', 10),
         ('9', 9),
         ('8', 8),
@@ -29,6 +29,37 @@ fn compare_hand(hand1 : &(String, i32), hand2 : &(String, i32)) -> Ordering {
     }
     Ordering::Equal
 }
+
+fn substitute(hand: String) -> String {
+    if hand == "JJJJJ" {
+        return String::from("AAAAA");
+    }
+    let mut frequencies = HashMap::new();
+
+    for ch in hand.chars() {
+        *frequencies.entry(ch).or_insert(0) += 1;
+    }
+
+    let mut max_freq = 0;
+    let mut most_frequent = None;
+    for (&ch, &freq) in &frequencies {
+        if freq > max_freq && ch != 'J' {
+            max_freq = freq;
+            most_frequent = Some(ch);
+        }
+    }
+
+    let substitutor = match most_frequent {
+        Some(ch) => ch,
+        None => panic!("No characters found: {}", hand),
+    };
+
+    let substituted = hand.clone().chars()
+        .map(|c| if c == 'J' { substitutor } else { c })
+        .collect();
+    println!("Substituted: {} -> {}", hand, substituted);
+    substituted
+}
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     let mut types: Vec<Vec<(String, i32)>> = vec![Vec::new(); 7];
 
@@ -38,7 +69,9 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         let bid = bid_.strip_prefix(" ").unwrap().parse::<i32>().unwrap();
 
         let hand = (hand_.to_string(), bid);
-        for c in hand.0.chars() {
+
+        let substituted = substitute(hand.0.clone());
+        for c in substituted.chars() {
             *char_counts.entry(c).or_insert(0) += 1;
         }
         let mut top: Vec<i32> = char_counts.values().cloned().collect();
@@ -58,15 +91,20 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         println!("Hand: {} -> {:?}", hand.0, top);
     }
     let mut pos = input.len();
+    let mut hand_type_idx = 0;
     let mut sum_a:i64 = 0;
     for hand_type in &types {
         let mut curr_type = hand_type.clone();
         curr_type.sort_by(compare_hand);
         println!("{:?}\n\n", curr_type);
-        for (_, bid) in curr_type {
+        for (hand, bid) in curr_type {
             sum_a += (bid as i64) * (pos as i64);
+            if hand.contains('J') {
+                println!("({}) {} -> {}", hand_type_idx, hand, pos);
+            }
             pos -= 1;
         }
+        hand_type_idx += 1;
     }
 
     (Some(sum_a.to_string()), None)
