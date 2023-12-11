@@ -1,8 +1,15 @@
 use std::cmp::max;
+use crate::days::day10::Direction::{Down, Neutral, Up};
 
+#[derive(PartialEq)]
+enum Direction {
+    Up,
+    Down,
+    Neutral
+}
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     let mut map: Vec<Vec<char>> = Vec::new();
-    ;
+
     let mut start = (0i32, 0, 0);
 
     for (row_num, row) in input.iter().enumerate() {
@@ -16,6 +23,7 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         }
     }
     let mut seen: Vec<Vec<i32>> = vec![vec![-1; map[0].len()]; map.len()];
+    let mut pipes: Vec<Vec<char>> = vec![vec!['.'; map[0].len()]; map.len()];
     seen[start.1][start.2] = 0;
 
     println!("{:?} -> {:?}", start, map[start.1][start.2]);
@@ -96,5 +104,36 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         println!("Stack: {:?}", stack);
     }
 
-    (Some(highest.to_string()), None)
+    // Odd walls -> Inside loop. Even Walls -> Consider Outside loop
+    for (r, row) in seen.iter().enumerate() {
+        for (c, v) in row.iter().enumerate() {
+            if *v != -1i32 {
+                pipes[r][c] = map[r][c];
+            }
+        }
+    }
+
+    let mut sum_b = 0;
+    for row in &pipes {
+        let mut inside = false;
+        let mut direction: Direction = Neutral;
+        for item in row {
+            match *item {
+                '|' => inside = !inside,
+                '-' => (),
+                'L' => direction = Up,
+                'J' if direction == Up => direction = Neutral,
+                'J' if direction == Down => inside = !inside,
+                '7' if direction == Down => direction = Neutral,
+                '7' if direction == Up => inside = !inside,
+                'F' => direction = Down,
+                '.' if inside => sum_b += 1,
+                '.' if !inside => (),
+                _ => panic!("Processing Unknown Char!")
+            }
+        }
+        println!("{:?}", row.into_iter().collect::<String>());
+    }
+
+    (Some(highest.to_string()), Some(sum_b.to_string()))
 }
