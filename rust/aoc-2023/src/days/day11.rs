@@ -10,7 +10,7 @@ fn distort_galaxies(galaxies:Vec<(usize, usize)>, rows_to_expand:Vec<usize>, col
         while cols < cols_to_expand.len() && cols_to_expand[cols] < galaxy.1 {
             cols += 1;
         }
-        distorted_galaxies.push((galaxy.0 + rows, galaxy.1 + cols))
+        distorted_galaxies.push((galaxy.0 + rows * (1_000_000 - 1), galaxy.1 + cols * (1_000_000 - 1)))
     }
     distorted_galaxies
 }
@@ -52,6 +52,6 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
             sum_a += (src.0 as i64 - dst.0 as i64).abs() + (src.1 as i64 - dst.1 as i64).abs();
         }
     }
-    println!("Total Distance {}", sum_a/2);
+    println!("Total Distance {}", sum_a / 2);
     (Some((sum_a / 2).to_string()), None)
 }
