@@ -1,9 +1,15 @@
 
 fn arrangements(prefix: Vec<char>, row:Vec<char>, groups:Vec<i32>) -> i32{
-    println!("{:?}, {:?}, {:?}", prefix, row, groups);
+    // println!("{:?}, {:?}, {:?}", prefix, row, groups);
     match (row.len(), groups.len()) {
-        (_, 0) => return 1,
-        (0, _) => return 0,
+        (_, 0) => {
+            println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 1);
+            return 1
+        },
+        (0, _) => {
+            println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
+            return 0
+        },
         _ => ()
     }
     match row[0] {
@@ -16,13 +22,14 @@ fn arrangements(prefix: Vec<char>, row:Vec<char>, groups:Vec<i32>) -> i32{
         '#' => {
             let spring_count = groups[0] as usize;
             if spring_count > row.len() {
+                println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
                 return 0;
             }
             if row.iter().take(spring_count).all(|c| *c == '?' || *c == '#') {
                 if row.len() == spring_count {
                     let mut prefix_ = prefix.clone();
                     prefix_.append(&mut vec!['#'; spring_count]);
-                    return arrangements(prefix_,  vec![], vec![]);
+                    return arrangements(prefix_,  vec![], groups.iter().skip(1).cloned().collect());
                 } else if row[spring_count] != '#' {
                     let mut prefix_ = prefix.clone();
                     prefix_.append(&mut row.iter().take(spring_count + 1).cloned().collect());
@@ -30,6 +37,7 @@ fn arrangements(prefix: Vec<char>, row:Vec<char>, groups:Vec<i32>) -> i32{
                                         groups.iter().skip(1).cloned().collect());
                 }
             }
+            println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
             return 0;
         }
         '?' => {
