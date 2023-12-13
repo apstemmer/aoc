@@ -1,13 +1,17 @@
+use clap::builder::Str;
 
 fn arrangements(prefix: Vec<char>, row:Vec<char>, groups:Vec<i32>) -> i32{
     // println!("{:?}, {:?}, {:?}", prefix, row, groups);
     match (row.len(), groups.len()) {
-        (_, 0) => {
-            println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 1);
-            return 1
+        (_, 0) if row.iter().any(|c| *c == '#') => {
+            // println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 1);
+            return 0
         },
+        (_, 0) => {
+            return 1
+        }
         (0, _) => {
-            println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
+            // println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
             return 0
         },
         _ => ()
@@ -22,7 +26,7 @@ fn arrangements(prefix: Vec<char>, row:Vec<char>, groups:Vec<i32>) -> i32{
         '#' => {
             let spring_count = groups[0] as usize;
             if spring_count > row.len() {
-                println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
+                // println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
                 return 0;
             }
             if row.iter().take(spring_count).all(|c| *c == '?' || *c == '#') {
@@ -37,7 +41,7 @@ fn arrangements(prefix: Vec<char>, row:Vec<char>, groups:Vec<i32>) -> i32{
                                         groups.iter().skip(1).cloned().collect());
                 }
             }
-            println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
+            // println!("{:?}, {:?}, {:?} -> {}", prefix, row, groups, 0);
             return 0;
         }
         '?' => {
@@ -55,7 +59,7 @@ fn arrangements(prefix: Vec<char>, row:Vec<char>, groups:Vec<i32>) -> i32{
 }
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     let mut sum_a = 0;
-    for row in input {
+    for (num, row) in input.iter().enumerate() {
         let mut iter = row.split_whitespace();
         let springs: Vec<char> = iter.next().unwrap().chars().collect();
         let groups: Vec<i32> = iter.next().unwrap()
@@ -63,8 +67,9 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
             .map(|gr| gr.parse::<i32>().unwrap())
             .collect();
         let count = arrangements(vec![],springs.clone(), groups.clone());
-        println!("{:?} -> {:?} -> {:?}", springs, groups, count);
+        println!("{} -> {}", springs.iter().collect::<String>(), count);
         sum_a += count;
     }
     (Some(sum_a.to_string()), None)
 }
+
