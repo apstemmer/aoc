@@ -5,7 +5,6 @@ fn vertical_symmetry(pattern:Vec<Vec<char>>, col_idx:usize) -> usize {
     let mut right: HashSet<(usize, usize)> = HashSet::new();
     let mut depth = 0;
     while left.eq(&right) && col_idx + depth < pattern[0].len() && col_idx as i32 - 1 - depth as i32 >= 0 {
-        println!("Considering col: {} at depth: {}", col_idx, depth);
         for (r, row) in pattern.iter().enumerate() {
             match row[col_idx - depth - 1] {
                 '#' => {
@@ -25,7 +24,6 @@ fn vertical_symmetry(pattern:Vec<Vec<char>>, col_idx:usize) -> usize {
     if left.eq(&right) {
         depth += 1;
     }
-    println!("{:?} | {:?} -> {} {} {}", left, right, left.eq(&right), pattern[0].len(), col_idx as i32 - 1 - depth as i32 >= 0);
     depth - 1
 }
 
@@ -43,6 +41,50 @@ fn horizontal_symmetry(pattern:Vec<Vec<char>>, row_idx:usize) -> usize {
     }
     depth - 1
 }
+
+fn smudge_patterns(pattern: Vec<Vec<char>>) -> Vec<Vec<Vec<char>>> {
+    let mut smudged_patterns: Vec<Vec<Vec<char>>> = Vec::new();
+    for col in 0..pattern.len() {
+        for row in 0..pattern[0].len() {
+
+            let mut smudged_pattern = pattern.clone();
+            smudged_pattern[col][row] = if pattern[col][row] == '.' { '#' } else { '.' };
+            smudged_patterns.push(smudged_pattern);
+
+        }
+    }
+    smudged_patterns
+}
+
+fn print_pattern(pattern: Vec<Vec<char>>) {
+    for row in pattern {
+        println!("{:?}", row.into_iter().collect::<String>())
+    }
+    println!("");
+}
+
+fn find_perfect_line(pattern:Vec<Vec<char>>, ignore:Option<(Option<usize>, Option<usize>)>) -> (Option<usize>, Option<usize>) {
+    let mut col_symmetry: Option<usize> = None;
+    let mut row_symmetry: Option<usize> = None;
+    let to_ignore = ignore.unwrap_or((None, None));
+    for col in 1..pattern[0].len() {
+        let symmetry = vertical_symmetry(pattern.clone(), col);
+        if col + symmetry == pattern[0].len() || col - symmetry == 0 {
+            if Some(col) != to_ignore.1 {
+                col_symmetry = Some(col);
+            }
+        }
+    }
+    for row in 1..pattern.len() {
+        let symmetry = horizontal_symmetry(pattern.clone(), row);
+        if row + symmetry == pattern.len() || row - symmetry == 0 {
+            if Some(row) != to_ignore.0 {
+                row_symmetry = Some(row);
+            }
+        }
+    }
+    (row_symmetry, col_symmetry)
+}
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     let mut patterns: Vec<Vec<Vec<char>>> = Vec::new();
     patterns.push(Vec::new());
@@ -58,51 +100,31 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         }
     }
     let mut sum_a = 0;
-    for pattern in &patterns {
-        println!("New Pattern!");
-        let mut col_symmetry: Option<usize> = None;
-        let mut row_symmetry: Option<usize> = None;
-        for col in 1..pattern[0].len() {
-            let symmetry = vertical_symmetry(pattern.clone(), col);
-            if col + symmetry == pattern[0].len() || col - symmetry == 0 {
-                // There is perfect symmetry
-                println!("Perfect Col! {} has {} symmetry", col, symmetry);
-                if let Some(col_seen) = col_symmetry {
-                    println!("Duplicate! {:?}", pattern);
-                }
-                col_symmetry = Some(col);
-                // break;
-            }
-            println!("Column {} has {}", col, symmetry);
+    let mut sum_b = 0;
+    for (num, pattern) in patterns.iter().enumerate() {
+
+        let lines = find_perfect_line((*pattern).clone(), None);
+        match lines {
+            (Some(row), None) => sum_a += row * 100,
+            (None, Some(col)) => sum_a += col,
+            _ => panic!("Unexpected Row AND Column")
         }
-        if let Some(col) = col_symmetry {
-            for row in pattern {
-                println!("{:?}", row);
-            }
-            sum_a += col;
-            continue;
-        }
-        for row in 1..pattern.len() {
-            let symmetry = horizontal_symmetry(pattern.clone(), row);
-            if row + symmetry == pattern.len() || row - symmetry == 0 {
-                // There is perfect symmetry
-                println!("Perfect Row! {} has {} symmetry", row, symmetry);
-                if let Some(col_seen) = col_symmetry {
-                    println!("Duplicate Row1! {}, New {}", col_seen, symmetry);
+        for smudged_pattern in smudge_patterns((*pattern).clone()) {
+            let perfect_line = find_perfect_line(smudged_pattern.clone(), Some(lines.clone()));
+            if perfect_line != lines {
+                match perfect_line {
+                    (row, _) if row != lines.0 && row.is_some() => {
+                        sum_b += row.unwrap() * 100;
+                        break;
+                    },
+                    (_, col) if col != lines.1 && col.is_some() => {
+                        sum_b += col.unwrap();
+                        break;
+                    },
+                    _ => ()
                 }
-                if let Some(row_seen) = row_symmetry {
-                    println!("Duplicate Row! {}, New {}", row_seen, row);
-                }
-                row_symmetry = Some(row);
-                // break;
             }
-            println!("Row {} has {}", row, symmetry);
-        }
-        if let Some(row) = row_symmetry {
-            sum_a += row * 100;
-            continue;
         }
     }
-    println!("{:?}", patterns);
-    (Some(sum_a.to_string()), None)
+    (Some(sum_a.to_string()), Some(sum_b.to_string()))
 }
