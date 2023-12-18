@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::collections::HashSet;
 
 fn add_beam(beam: (i32, i32, char), beams: &mut Vec<(usize, usize, char)>, grid: &Vec<Vec<char>>) {
@@ -5,17 +6,16 @@ fn add_beam(beam: (i32, i32, char), beams: &mut Vec<(usize, usize, char)>, grid:
         beams.push((beam.0 as usize, beam.1 as usize, beam.2));
     }
 }
-pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
-    let mut grid:Vec<Vec<char>> = input.iter().map(|r| r.chars().collect()).collect();
 
+fn count_energized(beam: (usize, usize, char), grid: &Vec<Vec<char>>) -> i32 {
     let mut seen: HashSet<(usize, usize, char)> = HashSet::new();
     let mut beams: Vec<(usize, usize, char)> = Vec::new();
-    beams.push((0, 0, '>'));
+    beams.push(beam);
 
     while beams.len() > 0 {
         let curr_beam = beams.pop().unwrap();
         if seen.contains(&curr_beam) {
-            println!("Already seen!");
+            // println!("Already seen!");
             continue
         }
 
@@ -66,6 +66,21 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         .map(|(r, c, d)| (r, c))
         .collect();
 
-    println!("{:?}", energized);
-    (Some(energized.len().to_string()), None)
+    energized.len() as i32
+}
+pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
+    let grid:Vec<Vec<char>> = input.iter().map(|r| r.chars().collect()).collect();
+    let energized_a: i32 = count_energized((0,0,'>'), &grid);
+
+    let mut max_energized = 0;
+    for r in 0..grid.len() {
+        max_energized = max(max_energized, count_energized((r, 0, '>'), &grid));
+        max_energized = max(max_energized, count_energized((r, grid[0].len() - 1, '<'), &grid));
+    }
+    for c in 0..grid[0].len() {
+        max_energized = max(max_energized, count_energized((0, c, 'v'), &grid));
+        max_energized = max(max_energized, count_energized((grid.len() - 1, c, '^'), &grid));
+    }
+
+    (Some(energized_a.to_string()), Some(max_energized.to_string()))
 }
