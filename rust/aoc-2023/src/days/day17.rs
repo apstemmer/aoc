@@ -16,10 +16,11 @@ impl Eq for Node {}
 
 impl PartialEq<Self> for Node {
     fn eq(&self, other: &Self) -> bool {
-        if self.r.eq(&other.r) &&
-            self.c.eq(&other.c) &&
-            self.d.eq(&other.d) &&
-            self.history.eq(&other.history){
+        if self.r.eq(&other.r)
+            && self.c.eq(&other.c)
+            && self.d.eq(&other.d)
+            // && self.history.eq(&other.history)
+        {
             return true;
         }
         false
@@ -36,7 +37,7 @@ impl Hash for Node {
         self.r.hash(state);
         self.c.hash(state);
         self.d.hash(state);
-        self.history.hash(state);
+        // self.history.hash(state);
     }
 }
 
@@ -56,6 +57,19 @@ fn heuristic(row:i32, col: i32, grid: &Vec<Vec<i32>>) -> i32 {
     grid.len() as i32 - row + grid[0].len() as i32 - col
 }
 
+fn add_node(node:Node, heap: &mut BinaryHeap<Node>, seen: &HashSet<Node>) {
+    if seen.contains(&node) {
+        // println!("Duplicate!!");
+        return
+    }
+    // Path must not go in the same direction more than 3 times
+    let steps = 2;
+    if node.history.0 > steps || node.history.1 > steps || node.history.2 > steps || node.history.3 > steps {
+        return
+    }
+    heap.push(node);
+}
+
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     let grid:Vec<Vec<i32>> = input.iter().map(|r| r.chars()
         .map(|c| c.to_digit(10).unwrap() as i32).collect())
@@ -63,25 +77,27 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
 
     let mut heap: BinaryHeap<Node> = BinaryHeap::new();
     let mut seen: HashSet<Node> = HashSet::new();
-    heap.push(Node {
-        r: 0, c: 1, d: '>', history: (0,0,0,0), cost: grid[0][1], heuristic: heuristic(0, 1, &grid),
-    });
+    add_node(Node {
+        r: 0, c: 1, d: '>', history: (0,0,0,0), cost: grid[0][0], heuristic: heuristic(0, 1, &grid)
+    }, &mut heap, &seen);
+    add_node(Node {
+        r: 1, c: 0, d: 'v', history: (0,0,0,0), cost: grid[0][0], heuristic: heuristic(1, 0, &grid)
+    }, &mut heap, &seen);
     let mut node = heap.pop().unwrap();
-    while node.r != (input.len() - 1) as i32 && node.c != (input[0].len() - 1) as i32 {
-        println!("Considering: {:?}", node);
-        // Ignore duplicate Nodes
-        if seen.contains(&node) {
-            println!("Duplicate!");
-            continue;
+    while node.r != (input.len() - 1) as i32 || node.c != (input[0].len() - 1) as i32 {
+        // println!("Considering: {:?} ({:?} / {:?})", node, heap.len(), seen.len());
+        if seen.len() % 1000 == 0 {
+            println!("Seen {:?}", seen.clone().into_iter().filter(|n| n.r == 5 && n.c == 5).collect::<HashSet<Node>>());
         }
-        // Path must go through grid
-        if !(0 <= node.r && node.r < grid.len() as i32 && 0 <= node.c && node.c < grid[0].len() as i32) {
+        if seen.contains(&node) {
+            // println!("Duplicate!!");
             seen.insert(node.clone());
             node = heap.pop().unwrap();
             continue;
         }
-        // Path must not go in the same direction more than 3 times
-        if node.history.0 > 3 || node.history.1 > 3 || node.history.2 > 3 || node.history.3 > 3 {
+        // Path must go through grid
+        if !(0 <= node.r && node.r < grid.len() as i32 && 0 <= node.c && node.c < grid[0].len() as i32) {
+            // println!("Invalid!");
             seen.insert(node.clone());
             node = heap.pop().unwrap();
             continue;
@@ -90,33 +106,34 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         match node {
             Node {d: '>', .. } => {
                 let heuristic = heuristic(node.r, node.c + 1, &grid);
-                heap.push(Node {c: node.c + 1, d: '^', cost, heuristic, history: (1,0,0,0), ..node});
-                heap.push(Node {c: node.c + 1, d: '>', cost, heuristic, history: (0, node.history.1 + 1, 0, 0), ..node});
-                heap.push(Node {c: node.c + 1, d: 'v', cost, heuristic, history: (0,0,1,0), ..node});
+                add_node(Node {c: node.c + 1, d: '^', cost, heuristic, history: (1,0,0,0), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c + 1, d: '>', cost, heuristic, history: (0, node.history.1 + 1, 0, 0), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c + 1, d: 'v', cost, heuristic, history: (0,0,1,0), ..node}, &mut heap, &seen);
             }
             Node {d: 'v', .. } => {
                 let heuristic = heuristic(node.r + 1, node.c, &grid);
-                heap.push(Node {r: node.r + 1, d: '<', cost, heuristic, history: (0,0,0,1), ..node});
-                heap.push(Node {r: node.r + 1, d: 'v', cost, heuristic, history: (0, 0, node.history.1 + 1, 0), ..node});
-                heap.push(Node {r: node.r + 1, d: '>', cost, heuristic, history: (0,1,0,0), ..node});
+                add_node(Node {r: node.r + 1, d: '<', cost, heuristic, history: (0,0,0,1), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r + 1, d: 'v', cost, heuristic, history: (0, 0, node.history.1 + 1, 0), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r + 1, d: '>', cost, heuristic, history: (0,1,0,0), ..node}, &mut heap, &seen);
             }
             Node {d: '<', .. } => {
                 let heuristic = heuristic(node.r, node.c - 1, &grid);
-                heap.push(Node {c: node.c - 1, d: '^', cost, heuristic, history: (1,0,0,0), ..node});
-                heap.push(Node {c: node.c - 1, d: '<', cost, heuristic, history: (0, 0, 0, node.history.1 + 1), ..node});
-                heap.push(Node {c: node.c - 1, d: 'v', cost, heuristic, history: (0,0,1,0), ..node});
+                add_node(Node {c: node.c - 1, d: '^', cost, heuristic, history: (1,0,0,0), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c - 1, d: '<', cost, heuristic, history: (0, 0, 0, node.history.1 + 1), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c - 1, d: 'v', cost, heuristic, history: (0,0,1,0), ..node}, &mut heap, &seen);
             }
             Node {d: '^', .. } => {
                 let heuristic = heuristic(node.r - 1, node.c, &grid);
-                heap.push(Node {r: node.r - 1, d: '<', cost, heuristic, history: (0,0,0,1), ..node});
-                heap.push(Node {r: node.r - 1, d: '^', cost, heuristic, history: (node.history.1 + 1, 0, 0, 0), ..node});
-                heap.push(Node {r: node.r - 1, d: '>', cost, heuristic, history: (0,1,0,0), ..node});
+                add_node(Node {r: node.r - 1, d: '<', cost, heuristic, history: (0,0,0,1), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r - 1, d: '^', cost, heuristic, history: (node.history.1 + 1, 0, 0, 0), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r - 1, d: '>', cost, heuristic, history: (0,1,0,0), ..node}, &mut heap, &seen);
             }
             _ => panic!("Could not match the Node!")
         }
         seen.insert(node.clone());
         node = heap.pop().unwrap();
     }
+    println!("Final: {:?}", node.cost);
     (None, None)
 }
 
