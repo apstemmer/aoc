@@ -71,12 +71,41 @@ fn add_node(node:Node, heap: &mut BinaryHeap<Node>, seen: &HashSet<Node>) {
     if seen.contains(&node) {
         return
     }
-    // Path must not go in the same direction more than 3 times
-    let steps = 2;
-    if node.history.0 > steps || node.history.1 > steps || node.history.2 > steps || node.history.3 > steps {
-        return
+    // Path must not go in the same direction more than 4 times
+    let max_steps = 10;
+    let min_steps = 4;
+    let over_min = node.history.0 >= min_steps || node.history.1 >= min_steps || node.history.2 >= min_steps || node.history.3 >= min_steps;
+
+    match node.d {
+        '^' if node.history.0 >= max_steps => return,
+        '>' if node.history.1 >= max_steps => return,
+        'v' if node.history.2 >= max_steps => return,
+        '<' if node.history.3 >= max_steps => return,
+        _ => ()
+    }
+
+    match node.path.iter().last() {
+        Some((_,_,d)) if *d != node.d && !over_min => {
+            // println!("New Constraint {:?}, {:?}", node, over_min);
+            return
+        },
+        _ => ()
     }
     heap.push(node);
+}
+
+fn valid_end(path: &Vec<(i32, i32, char)>) -> bool {
+    println!("Check Valid");
+    if path.len() < 4 {
+        return false;
+    }
+    let direction: char = path.last().unwrap().2;
+    for i in path.len() - 4 .. path.len() {
+        if path[i].2 != direction {
+            return false;
+        }
+    }
+    true
 }
 
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
@@ -96,7 +125,13 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     while node.r != (input.len() - 1) as i32 || node.c != (input[0].len() - 1) as i32 {
         if seen.contains(&node) {
             seen.insert(node.clone());
-            node = heap.pop().unwrap();
+            node = match heap.pop() {
+                Some(n) => n,
+                None => {
+                    panic!("Oh no!!");
+                    // node.clone()
+                }
+            };
             continue;
         }
         // Path must go through grid
@@ -111,32 +146,40 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         match node {
             Node {d: '>', .. } => {
                 let heuristic = heuristic(node.r, node.c + 1, &grid);
-                add_node(Node {c: node.c + 1, d: '^', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c + 1, d: '^', cost, heuristic, history: (0, node.history.1 + 1, 0, 0), path: path.clone(), ..node}, &mut heap, &seen);
                 add_node(Node {c: node.c + 1, d: '>', cost, heuristic, history: (0, node.history.1 + 1, 0, 0), path: path.clone(), ..node}, &mut heap, &seen);
-                add_node(Node {c: node.c + 1, d: 'v', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c + 1, d: 'v', cost, heuristic, history: (0, node.history.1 + 1, 0, 0), path: path.clone(), ..node}, &mut heap, &seen);
             }
             Node {d: 'v', .. } => {
                 let heuristic = heuristic(node.r + 1, node.c, &grid);
-                add_node(Node {r: node.r + 1, d: '<', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r + 1, d: '<', cost, heuristic, history: (0, 0, node.history.2 + 1, 0), path: path.clone(), ..node}, &mut heap, &seen);
                 add_node(Node {r: node.r + 1, d: 'v', cost, heuristic, history: (0, 0, node.history.2 + 1, 0), path: path.clone(), ..node}, &mut heap, &seen);
-                add_node(Node {r: node.r + 1, d: '>', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r + 1, d: '>', cost, heuristic, history: (0, 0, node.history.2 + 1, 0), path: path.clone(), ..node}, &mut heap, &seen);
             }
             Node {d: '<', .. } => {
                 let heuristic = heuristic(node.r, node.c - 1, &grid);
-                add_node(Node {c: node.c - 1, d: '^', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c - 1, d: '^', cost, heuristic, history: (0, 0, 0, node.history.3 + 1), path: path.clone(), ..node}, &mut heap, &seen);
                 add_node(Node {c: node.c - 1, d: '<', cost, heuristic, history: (0, 0, 0, node.history.3 + 1), path: path.clone(), ..node}, &mut heap, &seen);
-                add_node(Node {c: node.c - 1, d: 'v', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {c: node.c - 1, d: 'v', cost, heuristic, history: (0, 0, 0, node.history.3 + 1), path: path.clone(), ..node}, &mut heap, &seen);
             }
             Node {d: '^', .. } => {
                 let heuristic = heuristic(node.r - 1, node.c, &grid);
-                add_node(Node {r: node.r - 1, d: '<', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r - 1, d: '<', cost, heuristic, history: (node.history.0 + 1, 0, 0, 0), path: path.clone(), ..node}, &mut heap, &seen);
                 add_node(Node {r: node.r - 1, d: '^', cost, heuristic, history: (node.history.0 + 1, 0, 0, 0), path: path.clone(), ..node}, &mut heap, &seen);
-                add_node(Node {r: node.r - 1, d: '>', cost, heuristic, history: (0,0,0,0), path: path.clone(), ..node}, &mut heap, &seen);
+                add_node(Node {r: node.r - 1, d: '>', cost, heuristic, history: (node.history.0 + 1, 0, 0, 0), path: path.clone(), ..node}, &mut heap, &seen);
             }
             _ => panic!("Could not match the Node!")
         }
         seen.insert(node.clone());
-        node = heap.pop().unwrap();
+        node = match heap.pop() {
+            Some(n) => n,
+            None => {
+                panic!("Oh no!");
+            }
+        };
+        while node.r == (input.len() - 1) as i32 && node.c == (input[0].len() - 1) as i32 && !valid_end(&node.path) {
+            node = heap.pop().unwrap();
+        }
     }
     println!("Final: {:?} -> {:?}", node, path_cost(node.clone().path, &grid));
     (Some(path_cost(node.clone().path, &grid).to_string()), None)
