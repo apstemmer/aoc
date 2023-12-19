@@ -1,21 +1,21 @@
 use std::cmp::{max, min};
 use std::collections::{HashMap, HashSet};
 
-fn print_grid(points: &HashSet<(i32, i32)>, dims: (i32, i32, i32,i32)) {
-    let buffer:i32 = 0;
+fn print_grid(points: &HashSet<(i64, i64)>, dims: (i64, i64, i64,i64)) {
+    let buffer:i64 = 0;
     let mut grid = vec![vec!['.'; (dims.3 - dims.2 + buffer) as usize  + 1]; (dims.1 - dims.0 + buffer) as usize  + 1];
     for x in (0..grid.len()).rev() {
         for y in 0..=grid[0].len() {
-            match points.get(&(x as i32 + dims.0, y as i32 + dims.2)) {
+            match points.get(&(x as i64 + dims.0, y as i64 + dims.2)) {
                 Some(..) => grid[x as usize][y as usize] = '#',
                 None => ()
             }
         }
-        println!("r {} {:?}", x as i32 + dims.0, grid[x as usize].iter().collect::<String>());
+        println!("r {} {:?}", x as i64 + dims.0, grid[x as usize].iter().collect::<String>());
     }
 }
 
-fn shoelace(open_nodes: &Vec<(i32, i32)>) -> i32 {
+fn shoelace(open_nodes: &Vec<(i64, i64)>) -> i64 {
     let mut nodes = open_nodes.clone();
     nodes.push(nodes[0].clone());
     let mut left_lace = 0;
@@ -26,42 +26,48 @@ fn shoelace(open_nodes: &Vec<(i32, i32)>) -> i32 {
     }
     (left_lace - right_lace).abs() / 2
 }
-pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
-    let mut colored:HashSet<(i32, i32)> = HashSet::new();
-    let mut moves: Vec<(char, i32)> = Vec::new();
-    let mut nodes: Vec<(i32, i32)> = Vec::new();
 
-    for row in input {
-        let mut split = row.split_whitespace().collect::<Vec<&str>>();
-        let record = (split[0].parse::<char>().unwrap(), split[1].parse::<i32>().unwrap());
-        moves.push(record);
-    }
-
+fn find_area_from_moves(moves: Vec<(char, i64)>) -> i64 {
+    let mut nodes: Vec<(i64, i64)> = Vec::new();
+    let mut perimeter: i64 = 0;
     let mut curr = (0, 0);
-    let mut min_x = i32::MAX;
-    let mut max_x = i32::MIN;
-    let mut min_y = i32::MAX;
-    let mut max_y = i32::MIN;
 
     for (direction, distance) in moves {
         nodes.push(curr.clone());
-        for i in 1..distance + 1 {
-            match direction {
-                'U' => curr = (curr.0 + 1, curr.1),
-                'R' => curr = (curr.0, curr.1 + 1),
-                'D' => curr = (curr.0 - 1, curr.1),
-                'L' => curr = (curr.0, curr.1 - 1),
-                _ => ()
-            }
-            colored.insert(curr.clone());
-            min_x = min(min_x, curr.0);
-            max_x = max(max_x, curr.0);
-            min_y = min(min_y, curr.1);
-            max_y = max(max_y, curr.1);
+        match direction {
+            'U' => curr = (curr.0 + distance, curr.1),
+            'R' => curr = (curr.0, curr.1 + distance),
+            'D' => curr = (curr.0 - distance, curr.1),
+            'L' => curr = (curr.0, curr.1 - distance),
+            _ => ()
         }
-    }
-    let area = shoelace(&nodes) + colored.len() as i32 / 2 + 1;
+        perimeter += distance;
 
-    println!("Nodes: {:?} -> {}", nodes, area);
-    (Some(area.to_string()), None)
+    }
+    shoelace(&nodes) + perimeter / 2 + 1
+}
+pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
+    let mut moves: Vec<(char, i64)> = Vec::new();
+    let mut nodes: Vec<(i64, i64)> = Vec::new();
+    let mut hex_moves: Vec<(char, i64)> = Vec::new();
+
+    for row in input {
+        let mut split = row.split_whitespace().collect::<Vec<&str>>();
+        let record = (split[0].parse::<char>().unwrap(), split[1].parse::<i64>().unwrap());
+        // println!("{:?}", split);
+        let hex = i64::from_str_radix(&split[2][2..split[2].len() - 1], 16).unwrap();
+        let direction = match hex & 0xF {
+            0 => 'R',
+            1 => 'D',
+            2 => 'L',
+            3 => 'U',
+            _ => panic!("Could not find valid direction!")
+        };
+        let length = hex >> 4;
+        moves.push(record);
+        hex_moves.push((direction, length));
+    }
+    let area: i64 = find_area_from_moves(moves);
+    let hex_area:i64 = find_area_from_moves(hex_moves);
+    (Some(area.to_string()), Some(hex_area.to_string()))
 }
