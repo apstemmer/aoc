@@ -1,7 +1,36 @@
 use std::collections::HashMap;
 
+fn is_accepted(part:(i32, i32, i32, i32), workflows: &HashMap<String, Vec<(i32, char, i32, String)>>) -> bool{
+    let mut workflow_name = String::from("in");
+    while workflow_name != String::from("R") && workflow_name != String::from("A") {
+        let workflow: &Vec<(i32, char, i32, String)> = workflows.get(&workflow_name).unwrap();
+        for rule in workflow {
+            let upcoming = match rule {
+                (0, '>', value, next ) if part.0 > *value => next.clone(),
+                (0, '<', value, next ) if part.0 < *value => next.clone(),
+                (1, '>', value, next ) if part.1 > *value => next.clone(),
+                (1, '<', value, next ) if part.1 < *value => next.clone(),
+                (2, '>', value, next ) if part.2 > *value => next.clone(),
+                (2, '<', value, next ) if part.2 < *value => next.clone(),
+                (3, '>', value, next ) if part.3 > *value => next.clone(),
+                (3, '<', value, next ) if part.3 < *value => next.clone(),
+                _ => workflow_name.clone(),
+            };
+            if upcoming != workflow_name {
+                workflow_name = upcoming;
+                break;
+            }
+        }
+    }
+    match workflow_name.as_str() {
+        "A" => true,
+        "R" => false,
+        _ => false
+    }
+}
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     let mut workflows:HashMap<String, Vec<(i32, char, i32, String)>> = HashMap::new();
+    let mut parts: Vec<(i32, i32, i32, i32)> = Vec::new();
     let mut row = 0;
     while !input[row].is_empty() {
         let splits: Vec<&str> = input[row].split(|s| "{,}".contains(s)).collect();
@@ -22,6 +51,23 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         workflows.insert(splits[0].to_string(), rules.clone());
         row += 1;
     }
+    for r in row+1..input.len() {
+        let splits: Vec<&str> = input[r].split(|s| "{=,}".contains(s)).collect();
+        parts.push((
+            splits[2].parse::<i32>().unwrap(),
+            splits[4].parse::<i32>().unwrap(),
+            splits[6].parse::<i32>().unwrap(),
+            splits[8].parse::<i32>().unwrap()));
+        println!("{:?}", splits);
+    }
     println!("{:?}", workflows);
-    (None, None)
+    println!("{:?}", parts);
+    let mut sum_a = 0;
+    for part in parts {
+        match is_accepted(part, &workflows) {
+            true => sum_a += part.0 + part.1 + part.2 + part.3,
+            false => (),
+        }
+    }
+    (Some(sum_a.to_string()), None)
 }
