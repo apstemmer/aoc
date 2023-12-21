@@ -1,3 +1,5 @@
+use std::any::Any;
+use std::cmp::min;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::Debug;
 
@@ -21,10 +23,11 @@ struct Broadcast {
     next: Vec<String>,
 }
 
-pub trait Module: Debug {
+pub trait Module: Debug + Any {
     fn send(&mut self, from: String, pulse:bool) -> Option<bool>;
     fn get_name(&self) -> String;
     fn get_next(&self) -> Vec<String>;
+    fn as_any(&self) -> &dyn Any;
 }
 
 impl Module for FlipFlop {
@@ -44,6 +47,10 @@ impl Module for FlipFlop {
     fn get_next(&self) -> Vec<String> {
         self.next.clone()
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Module for Conj {
@@ -62,6 +69,10 @@ impl Module for Conj {
     fn get_next(&self) -> Vec<String> {
         self.next.clone()
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Module for Broadcast {
@@ -75,6 +86,10 @@ impl Module for Broadcast {
 
     fn get_next(&self) -> Vec<String> {
         self.next.clone()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
@@ -137,7 +152,7 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
         println!("{:?}", module);
     }
 
-    for _ in 0..1000 {
+    for press in 1..100000 {
         pulses.push_back((String::from("button"), false, String::from("broadcaster")));
         while !pulses.is_empty() {
             let in_pulse: (String, bool, String) = pulses.pop_front().unwrap();
@@ -156,12 +171,23 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
                 },
                 _ => {}
             }
+
             let mut module = modules.get_mut(&*in_pulse.2).unwrap();
             let destinations = module.get_next();
             let out_pulse = module.send(in_pulse.0, in_pulse.1);
             if let Some(pulse) = out_pulse {
                 for dst in destinations {
                     pulses.push_back((module.get_name(), pulse, dst.clone()));
+                }
+            }
+            // The Conj leading up to rx
+            if in_pulse.2.as_str() == "nc" {
+                if let Some(conj) = module.as_any().downcast_ref::<Conj>() {
+                    if conj.state.values().any(|&s| s) {
+                        let positive = conj.state.iter().filter(|e| *e.1).collect::<HashMap<_, _>>();
+                        let key = positive.keys().collect::<Vec<_>>()[0].clone().to_string().clone();
+                        println!("{} -> {:?}", press, key);
+                    }
                 }
             }
         }
@@ -171,3 +197,10 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
 
     (Some((low_pulses*high_pulses).to_string()), None)
 }
+/*
+fn: 3847
+fh: 3851
+lk: 4003
+hh: 4027
+LCM(3847, 3851, 4003, 4027) = 238,815,727,638,557
+ */
