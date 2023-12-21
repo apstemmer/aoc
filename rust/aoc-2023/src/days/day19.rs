@@ -55,9 +55,11 @@ fn range_overlap(range_a:&Range, range_b:&Range) -> Option<Range> {
 
 fn range_split(sub_range: &Range, super_range: &Range) -> Range{
     if sub_range.min == super_range.min {
-        return Range::new(sub_range.max, super_range.max);
+        return Range::new(sub_range.max+1, super_range.max);
+    } else if sub_range.max == super_range.max {
+        return Range::new(super_range.min, sub_range.min-1);
     }
-    Range::new(super_range.min, sub_range.min)
+    panic!("Ranges Can't be split!");
 }
 
 fn process_range(range:(String, (Range, Range, Range, Range)), workflows:&HashMap<String, Vec<(i32, char, i32, String)>>) -> Vec<(String, (Range, Range, Range, Range))> {
@@ -69,7 +71,7 @@ fn process_range(range:(String, (Range, Range, Range, Range)), workflows:&HashMa
         println!("Rule: {:?} -> {:?} -> {:?}", rule, curr, next_ranges);
         match rule {
             (0, cmp, value, next ) => {
-                let cmp_range = if cmp == '>' { Range::new(value, 4000) } else { Range::new(0, value) };
+                let cmp_range = if cmp == '>' { Range::new(value + 1, 4000) } else { Range::new(0, value - 1) };
                 let overlap = range_overlap(&curr.0, &cmp_range);
                 if overlap.is_some() {
                     curr_range.0 = range_split(&overlap.clone().unwrap(), &curr.0);
@@ -77,7 +79,7 @@ fn process_range(range:(String, (Range, Range, Range, Range)), workflows:&HashMa
                 }
             }
             (1, cmp, value, next ) => {
-                let cmp_range = if cmp == '>' { Range::new(value, 4000) } else { Range::new(0, value) };
+                let cmp_range = if cmp == '>' { Range::new(value + 1, 4000) } else { Range::new(0, value - 1) };
                 let overlap = range_overlap(&curr.1, &cmp_range);
                 if overlap.is_some() {
                     curr_range.1 = range_split(&overlap.clone().unwrap(), &curr.1);
@@ -85,7 +87,7 @@ fn process_range(range:(String, (Range, Range, Range, Range)), workflows:&HashMa
                 }
             }
             (2, cmp, value, next ) => {
-                let cmp_range = if cmp == '>' { Range::new(value, 4000) } else { Range::new(0, value) };
+                let cmp_range = if cmp == '>' { Range::new(value + 1, 4000) } else { Range::new(0, value - 1) };
                 let overlap = range_overlap(&curr.2, &cmp_range);
                 if overlap.is_some() {
                     curr_range.2 = range_split(&overlap.clone().unwrap(), &curr.2);
@@ -93,7 +95,7 @@ fn process_range(range:(String, (Range, Range, Range, Range)), workflows:&HashMa
                 }
             }
             (3, cmp, value, next ) => {
-                let cmp_range = if cmp == '>' { Range::new(value, 4000) } else { Range::new(0, value) };
+                let cmp_range = if cmp == '>' { Range::new(value + 1, 4000) } else { Range::new(0, value - 1) };
                 let overlap = range_overlap(&curr.3, &cmp_range);
                 if overlap.is_some() {
                     curr_range.3 = range_split(&overlap.clone().unwrap(), &curr.3);
@@ -151,10 +153,10 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
 
     let mut ranges = Vec::new();
     let mut accepted_ranges = Vec::new();
-    ranges.push((String::from("in"), (Range::new(0, 4000),
-                                              Range::new(0, 4000),
-                                              Range::new(0, 4000),
-                                              Range::new(0, 4000))));
+    ranges.push((String::from("in"), (Range::new(1, 4000),
+                                              Range::new(1, 4000),
+                                              Range::new(1, 4000),
+                                              Range::new(1, 4000))));
     while !ranges.is_empty() {
         let processed_ranges: Vec<(String, (Range, Range, Range, Range))> = process_range(ranges.pop().unwrap(), &workflows);
         for range in processed_ranges {
@@ -168,7 +170,7 @@ pub fn execute(input: Vec<String>) -> (Option<String>, Option<String>) {
     println!("{:?} -> {}", accepted_ranges, accepted_ranges.len());
     let mut sum_b: i64 = 0;
     for range in accepted_ranges {
-        sum_b += (range.0.max - range.0.min) as i64 * (range.1.max - range.1.min) as i64 * (range.2.max - range.2.min) as i64 * (range.3.max - range.3.min) as i64;
+        sum_b += (range.0.max - range.0.min + 1) as i64 * (range.1.max - range.1.min + 1) as i64 * (range.2.max - range.2.min + 1) as i64 * (range.3.max - range.3.min + 1) as i64;
     }
 
     (Some(sum_a.to_string()), Some(sum_b.to_string()))
